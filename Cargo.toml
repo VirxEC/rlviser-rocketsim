@@ -1,0 +1,16 @@
+[package]
+name = "rlviser-rocketsim"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+planus = { git = "https://github.com/swz-git/planus", rev = "a0b1fbf" }
+rocketsim = { path = "../RocketSim/rocketsim" }
+serde = { version = "1.0.195", features = ["derive"] }
+
+[build-dependencies]
+planus-codegen = { git = "https://github.com/swz-git/planus", rev = "a0b1fbf" }
+planus-translation = { git = "https://github.com/swz-git/planus", rev = "a0b1fbf" }
+
+[dev-dependencies]
+device_query = "4.0.1"
