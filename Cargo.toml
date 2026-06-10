@@ -5,12 +5,15 @@ edition = "2024"
 
 [dependencies]
 planus = { git = "https://github.com/swz-git/planus", rev = "a0b1fbf" }
-rocketsim = { path = "../RocketSim/rocketsim" }
+rocketsim = { git = "https://github.com/VirxEC/RocketSim", branch = "vis-api" }
 serde = { version = "1.0.195", features = ["derive"] }
-
-[build-dependencies]
-planus-codegen = { git = "https://github.com/swz-git/planus", rev = "a0b1fbf" }
-planus-translation = { git = "https://github.com/swz-git/planus", rev = "a0b1fbf" }
 
 [dev-dependencies]
 device_query = "4.0.1"
+
+[build-dependencies]
+planus-codegen = { git = "https://github.com/swz-git/planus", rev = "a0b1fbf" }
+planus-translation = {
+  git = "https://github.com/swz-git/planus",
+  rev = "a0b1fbf"
+}

@@ -7,7 +7,7 @@ The crate provides:
 - A RocketSim `Vis` implementation that sends arena state updates to RLViser.
 - An `ArenaRlviserExt` helper trait for enabling/disabling visualization on an `Arena`.
 - FlatBuffers/Planus message encoding and decoding for the RLViser protocol.
-- A runnable keyboard-controlled example in `examples/connect.rs`.
+- Runnable examples in `examples/watch.rs` and `examples/drive.rs`.
 
 ## Requirements
 
@@ -53,15 +53,23 @@ fn main() -> std::io::Result<()> {
 
 When attached, the visualizer sends a connection message immediately and streams `GameState` packets from RocketSim to RLViser on every arena visualization update. When dropped, it sends a quit message.
 
-## Running the example
+## Running the examples
 
-Start RLViser first, then run:
+Start RLViser first, then run one of the examples.
+
+To watch an automated arena, optionally choosing the game mode:
 
 ```bash
-cargo run --example connect
+cargo run --example watch -- [soccar|hoops|dropshot]
 ```
 
-The example creates a Soccar arena with one blue Breakout and reads keyboard/mouse input for basic control:
+To drive a single blue Breakout with keyboard/mouse controls:
+
+```bash
+cargo run --example drive
+```
+
+The `drive` example reads keyboard/mouse input for basic control:
 
 | Input | Action |
 | --- | --- |
@@ -104,25 +112,3 @@ use rlviser_rocketsim::{PacketCodec, RlviserMessage};
 let mut codec = PacketCodec::new();
 let bytes = codec.encode(RlviserMessage::Connection);
 ```
-
-## Project layout
-
-```text
-.
-├── build.rs              # Generates Planus Rust code from FlatBuffers schemas
-├── examples/connect.rs   # Interactive RocketSim + RLViser demo
-├── spec/                 # FlatBuffers schemas
-└── src/lib.rs            # RLViser integration and RocketSim type conversions
-```
-
-## Development
-
-Useful commands:
-
-```bash
-cargo check
-cargo fmt
-cargo run --example connect
-```
-
-Generated FlatBuffers bindings are written to Cargo's build output directory and included at compile time; they are not checked into `src/`.
