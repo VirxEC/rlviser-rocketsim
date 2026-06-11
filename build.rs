@@ -52,7 +52,7 @@ fn main() {
 
     let schema_path = PathBuf::from(SCHEMA_DIR).join(ROOT_SCHEMA);
     let declarations = planus_translation::translate_files(&[schema_path.as_path()]).unwrap();
-    let raw_out = planus_codegen::generate_rust(&declarations)
+    let raw_out = planus_codegen::generate_rust(&declarations, false)
         .unwrap()
         .replace("#[no_implicit_prelude]\n", "");
     let formatted_out = format_string(&raw_out).unwrap();
