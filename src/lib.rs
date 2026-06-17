@@ -153,7 +153,7 @@ impl Rlviser {
         while self.socket.peek_from(&mut self.packet_size_buffer).is_ok() {
             let packet_size = PacketCodec::packet_len_from_header(self.packet_size_buffer);
             self.packet_buffer.resize(packet_size, 0);
-            let (_, src) = self.socket.recv_from(&mut self.packet_buffer)?;
+            self.socket.recv_from(&mut self.packet_buffer)?;
 
             let Ok(Some(message)) =
                 PacketCodec::decode_payload(&self.packet_buffer[PACKET_SIZE_BYTES..])
@@ -162,9 +162,7 @@ impl Rlviser {
             };
 
             match message {
-                RlviserMessage::Connection => {
-                    eprintln!("Connection established to {src}");
-                }
+                RlviserMessage::Connection => {}
                 RlviserMessage::Speed(speed) => {
                     self.speed = speed;
                 }
