@@ -33,8 +33,15 @@ fn main() -> io::Result<()> {
     let arena_type = args.gamemode;
 
     init_from_default(true)?;
-    let mut arena = setup_arena(arena_type);
+    let (mut arena, car_idxs) = setup_arena(arena_type);
     arena.set_rlviser_enabled(true)?;
+    let controls = CarControls {
+        steer: 0.2,
+        throttle: 1.0,
+        pitch: -0.1,
+        boost: true,
+        ..Default::default()
+    };
 
     println!("Connected to RLViser on port {RLVISER_PORT}");
     println!("Usage: cargo run --example watch -- [-g <soccar|hoops|dropshot>]");
@@ -49,6 +56,9 @@ fn main() -> io::Result<()> {
 
         if arena.is_ball_scored() {
             arena.reset_to_random_kickoff(None);
+            for &car_idx in &car_idxs {
+                arena.set_car_controls(car_idx, controls);
+            }
         }
 
         if !paused {
@@ -71,7 +81,7 @@ fn main() -> io::Result<()> {
     }
 }
 
-fn setup_arena(arena_type: GameMode) -> Arena {
+fn setup_arena(arena_type: GameMode) -> (Arena, [usize; 6]) {
     let mut arena = Arena::new_with_config(ArenaConfig {
         rng_seed: Some(0),
         ..ArenaConfig::new(arena_type)
@@ -86,7 +96,7 @@ fn setup_arena(arena_type: GameMode) -> Arena {
         arena.add_car(Team::Orange, CarBodyConfig::PLANK),
     ];
 
-    for car_idx in car_idxs {
+    for &car_idx in &car_idxs {
         arena.set_car_controls(
             car_idx,
             CarControls {
@@ -99,5 +109,5 @@ fn setup_arena(arena_type: GameMode) -> Arena {
         );
     }
 
-    arena
+    (arena, car_idxs)
 }
