@@ -1,16 +1,19 @@
-#[allow(clippy::wrong_self_convention)]
+#[allow(dead_code, clippy::wrong_self_convention)]
 mod flat {
     include!(concat!(env!("OUT_DIR"), "/flat.rs"));
 }
 mod flat_ext;
 
 use std::{
+    any::Any,
     io,
     net::{IpAddr, SocketAddr, UdpSocket},
     str::FromStr,
 };
 
-use rocketsim::{Arena, ArenaState, Vis, consts};
+use rocketsim::{
+    Arena, ArenaState, BallState, BoostPadState, CarState, TileDamageState, Vis, consts,
+};
 
 use crate::flat::rocketsim as fb;
 
@@ -149,7 +152,8 @@ impl Rlviser {
         Ok(())
     }
 
-    fn handle_return_messages(&mut self) -> io::Result<()> {
+    fn handle_return_messages(&mut self) -> io::Result<Option<fb::GameState>> {
+        let mut last_game_state = None;
         while self.socket.peek_from(&mut self.packet_size_buffer).is_ok() {
             let packet_size = PacketCodec::packet_len_from_header(self.packet_size_buffer);
             self.packet_buffer.resize(packet_size, 0);
@@ -169,14 +173,14 @@ impl Rlviser {
                 RlviserMessage::Paused(paused) => {
                     self.paused = paused;
                 }
-                // The Vis trait is observation-only, so editor-originated full-state updates cannot
-                // be applied here without mutable Arena access.
-                RlviserMessage::GameState(_) => {}
+                RlviserMessage::GameState(game_state) => {
+                    last_game_state = Some(*game_state);
+                }
                 RlviserMessage::Quit => {}
             }
         }
 
-        Ok(())
+        Ok(last_game_state)
     }
 }
 
@@ -188,21 +192,18 @@ impl Drop for Rlviser {
 
 impl Vis for Rlviser {
     fn update(&mut self, arena_state: &ArenaState, _dt: f32) {
-        if let Err(err) = self.handle_return_messages() {
-            eprintln!("Error handling RLViser messages: {err}");
-        }
-
-        if !self.paused {
-            let game_state = arena_state.to_flat();
-            if let Err(err) = self.send_message(RlviserMessage::GameState(Box::new(game_state))) {
-                eprintln!("Error sending game state to RLViser: {err}");
-            }
+        let game_state = arena_state.to_flat();
+        if let Err(err) = self.send_message(RlviserMessage::GameState(Box::new(game_state))) {
+            eprintln!("Error sending game state to RLViser: {err}");
         }
     }
 }
 
 pub trait ArenaRlviserExt {
     fn set_rlviser_enabled(&mut self, enabled: bool) -> io::Result<()>;
+    fn handle_rlviser_messages(&mut self) -> io::Result<()>;
+    fn rlviser_paused(&self) -> bool;
+    fn rlviser_speed(&self) -> f32;
 }
 
 impl ArenaRlviserExt for Arena {
@@ -214,5 +215,82 @@ impl ArenaRlviserExt for Arena {
         }
 
         Ok(())
+    }
+
+    fn handle_rlviser_messages(&mut self) -> io::Result<()> {
+        let Some(vis) = self.vis.as_deref_mut() else {
+            return Ok(());
+        };
+
+        let vis: &mut dyn Any = vis;
+        if let Some(rlviser) = vis.downcast_mut::<Rlviser>()
+            && let Some(game_state) = rlviser.handle_return_messages()?
+        {
+            apply_game_state(self, game_state);
+        }
+
+        Ok(())
+    }
+
+    fn rlviser_paused(&self) -> bool {
+        self.vis
+            .as_deref()
+            .and_then(|v| (v as &dyn Any).downcast_ref::<Rlviser>())
+            .map(Rlviser::paused)
+            .unwrap_or(false)
+    }
+
+    fn rlviser_speed(&self) -> f32 {
+        self.vis
+            .as_deref()
+            .and_then(|v| (v as &dyn Any).downcast_ref::<Rlviser>())
+            .map(Rlviser::speed)
+            .unwrap_or(1.0)
+    }
+}
+
+fn apply_game_state(arena: &mut Arena, game_state: fb::GameState) {
+    arena.set_ball_state(BallState::from_flat(game_state.ball));
+
+    if let Some(cars) = game_state.cars {
+        for car_info in &cars {
+            let car_idx = car_info.id as usize - 1;
+            if car_idx < arena.num_cars() {
+                arena.set_car_state(car_idx, CarState::from_flat(&car_info.state));
+            }
+        }
+    }
+
+    if let Some(pads) = &game_state.pads {
+        for (i, pad_info) in pads.iter().enumerate() {
+            if i < arena.num_boost_pads() {
+                arena.set_boost_pad_state(
+                    i,
+                    BoostPadState {
+                        cooldown: pad_info.state.cooldown,
+                    },
+                );
+            }
+        }
+    }
+
+    if let Some(tiles) = &game_state.tiles {
+        let mut tile_states = rocketsim::TileStates::default();
+
+        for (i, tile_info) in tiles.blue_tiles.iter().enumerate() {
+            tile_states.states[0][i] = match tile_info.state {
+                fb::TileState::Broken => TileDamageState::Broken,
+                fb::TileState::Damaged => TileDamageState::Damaged,
+                fb::TileState::Full => TileDamageState::Full,
+            };
+        }
+
+        for (i, tile_info) in tiles.orange_tiles.iter().enumerate() {
+            tile_states.states[1][i] = match tile_info.state {
+                fb::TileState::Broken => TileDamageState::Broken,
+                fb::TileState::Damaged => TileDamageState::Damaged,
+                fb::TileState::Full => TileDamageState::Full,
+            };
+        }
     }
 }

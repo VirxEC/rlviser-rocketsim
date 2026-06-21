@@ -9,7 +9,7 @@ rocketsim = { git = "https://github.com/VirxEC/RocketSim", branch = "vis-api" }
 serde = { version = "1.0.195", features = ["derive"] }
 
 [dev-dependencies]
-device_query = "4.0.1"
+clap = { version = "4.5", features = ["derive"] }
 
 [build-dependencies]
 planus-codegen = "1.3.0"
