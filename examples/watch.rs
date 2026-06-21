@@ -66,7 +66,9 @@ fn main() -> io::Result<()> {
         }
 
         if paused {
-            // Don't advance next_tick when paused, so timing resumes cleanly on unpause
+            // When paused, keep next_tick ticking forward so the sleep logic below
+            // always has a future target and we don't busy-spin.
+            next_tick += tick_interval;
         } else {
             next_tick += Duration::from_secs_f64(tick_interval.as_secs_f64() / speed as f64);
         }
