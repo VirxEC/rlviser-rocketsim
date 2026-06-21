@@ -16,7 +16,7 @@ use crate::flat::rocketsim as fb;
 
 pub const RLVISER_PORT: u16 = 45243;
 pub const ROCKETSIM_PORT: u16 = 34254;
-pub const PACKET_SIZE_BYTES: usize = 8;
+pub const PACKET_SIZE_BYTES: usize = size_of::<u64>();
 pub const TICK_RATE: f32 = consts::TICK_RATE;
 
 pub trait ToFlat {
@@ -207,11 +207,9 @@ pub trait ArenaRlviserExt {
 
 impl ArenaRlviserExt for Arena {
     fn set_rlviser_enabled(&mut self, enabled: bool) -> io::Result<()> {
-        match (enabled, self.get_vis_enabled()) {
-            (true, false) => self.set_vis(Some(Box::new(Rlviser::new()?))),
-            (false, true) => {
-                let _ = self.take_vis();
-            }
+        match (enabled, self.is_vis_enabled()) {
+            (true, false) => self.vis = Some(Box::new(Rlviser::new()?)),
+            (false, true) => self.vis = None,
             _ => {}
         }
 
