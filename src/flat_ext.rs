@@ -140,6 +140,7 @@ impl FromFlat<&fb::CarState> for CarState {
             auto_flip_timer: state.auto_flip_timer,
             auto_flip_torque_scale: state.auto_flip_torque_scale,
             bump_cooldown_timer: state.car_contact.as_ref().map_or(0.0, |c| c.cooldown_timer),
+            last_extra_hit_tick: None,
             world_contact_normal: state.world_contact_normal.map(Vec3A::from_flat),
             is_demoed: state.is_demoed,
             demo_respawn_timer: state.demo_respawn_timer,
@@ -187,7 +188,6 @@ impl FromFlat<fb::BallState> for BallState {
                     .has_damaged
                     .then_some(ball.ds_info.last_damage_tick),
             },
-            last_extra_hit_tick: None,
             tick_count_since_kickoff: 0,
         }
     }
