@@ -1,7 +1,7 @@
 use rocketsim::{
     ArenaState, BallState, BoostPadConfig, BoostPadState, CarBodyConfig, CarControls, CarInfo,
-    CarState, DropshotInfo, GameMode, HeatseekerInfo, Mat3A, PhysState, Team, TileDamageState,
-    TileStates, Vec3A, WheelPairConfig, consts,
+    CarState, DropshotInfo, GameMode, HeatseekerInfo, Mat3A, PhysState, RaycastHitInfo, Team,
+    TileDamageState, TileStates, UserInfoType, Vec3A, WheelPairConfig, consts,
 };
 
 use crate::{FromFlat, RlviserMessage, TICK_RATE, ToFlat, flat::rocketsim as fb};
@@ -71,10 +71,10 @@ impl ToFlat for CarState {
             physics: self.phys.to_flat(),
             is_on_ground: self.is_on_ground,
             wheels_with_contact: fb::WheelsWithContact {
-                front_left: self.wheels_with_contact[0],
-                front_right: self.wheels_with_contact[1],
-                rear_left: self.wheels_with_contact[2],
-                rear_right: self.wheels_with_contact[3],
+                front_left: self.wheels_with_contact[0].is_some(),
+                front_right: self.wheels_with_contact[1].is_some(),
+                rear_left: self.wheels_with_contact[2].is_some(),
+                rear_right: self.wheels_with_contact[3].is_some(),
             },
             has_jumped: self.has_jumped,
             has_double_jumped: self.has_double_jumped,
@@ -108,16 +108,35 @@ impl ToFlat for CarState {
 
 impl FromFlat<&fb::CarState> for CarState {
     fn from_flat(state: &fb::CarState) -> Self {
+        const DEFAULT_RAYCAST_INFO: RaycastHitInfo = RaycastHitInfo {
+            hit_point: Vec3A::ZERO,
+            hit_normal: Vec3A::Z,
+            hit_fraction: 0.0,
+            user_info: UserInfoType::None,
+        };
+
         Self {
             phys: PhysState::from_flat(state.physics),
             controls: CarControls::from_flat(state.last_controls),
             prev_controls: CarControls::from_flat(state.last_controls),
             is_on_ground: state.is_on_ground,
             wheels_with_contact: [
-                state.wheels_with_contact.front_left,
-                state.wheels_with_contact.front_right,
-                state.wheels_with_contact.rear_left,
-                state.wheels_with_contact.rear_right,
+                state
+                    .wheels_with_contact
+                    .front_left
+                    .then_some(DEFAULT_RAYCAST_INFO),
+                state
+                    .wheels_with_contact
+                    .front_right
+                    .then_some(DEFAULT_RAYCAST_INFO),
+                state
+                    .wheels_with_contact
+                    .rear_left
+                    .then_some(DEFAULT_RAYCAST_INFO),
+                state
+                    .wheels_with_contact
+                    .rear_right
+                    .then_some(DEFAULT_RAYCAST_INFO),
             ],
             has_jumped: state.has_jumped,
             has_double_jumped: state.has_double_jumped,
@@ -511,7 +530,7 @@ impl FromFlat<fb::Vec3> for Vec3A {
     }
 }
 
-fn tile_pos(idx: usize) -> fb::Vec3 {
+const fn tile_pos(idx: usize) -> fb::Vec3 {
     let x = (idx % 10) as f32;
     let y = (idx / 10) as f32;
 
