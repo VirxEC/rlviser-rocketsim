@@ -1,3 +1,9 @@
+//! [`ToFlat`]/[`FromFlat`] conversions between `rocketsim` types and the
+//! generated FlatBuffers schema types.
+//!
+//! Conversions are intentionally lossy where the wire schema stores less than
+//! the sim tracks (wheel raycast details, ball kickoff tick, tile positions).
+
 use rocketsim::{
     ArenaState, BallState, BoostPadConfig, BoostPadState, CarBodyConfig, CarControls, CarInfo,
     CarState, DropshotInfo, GameMode, HeatseekerInfo, Mat3A, PhysState, RaycastHitInfo, Team,

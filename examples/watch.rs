@@ -44,7 +44,7 @@ fn main() -> io::Result<()> {
     };
 
     println!("Connected to RLViser on port {RLVISER_PORT}");
-    println!("Usage: cargo run --example watch -- [-g <soccar|hoops|dropshot>]");
+    println!("Usage: cargo run --example watch -- [-g <soccar|hoops|dropshot|heatseeker|snowday|thevoid>]");
 
     let tick_interval = Duration::from_secs_f64(1.0 / f64::from(TICK_RATE));
     let mut next_tick = Instant::now();

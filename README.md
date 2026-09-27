@@ -7,27 +7,23 @@ The crate provides:
 - A RocketSim `Vis` implementation that sends arena state updates to RLViser.
 - An `ArenaRlviserExt` helper trait for enabling/disabling visualization on an `Arena`.
 - FlatBuffers/Planus message encoding and decoding for the RLViser protocol.
-- Runnable examples in `examples/watch.rs` and `examples/drive.rs`.
+- A runnable example in `examples/watch.rs`.
 
 ## Requirements
 
-- Rust with Edition 2024 support.
-- `rustfmt` available on `PATH`.
-  - The build script generates Rust code from FlatBuffers schemas in `spec/` and formats it with `rustfmt`.
-- A local RocketSim Rust crate at `../RocketSim/rocketsim`, as configured in `Cargo.toml`.
-- RocketSim collision meshes in the runtime working directory when initializing RocketSim.
-- A running RLViser instance listening on the default RLViser port.
+- RocketSim collision meshes in `./collision_meshes/` when calling `init_from_default`.
+- A running RLViser instance listening on the RLViser port.
 
 ## Ports
 
 By default, this crate uses localhost UDP communication:
 
-| Constant | Port | Purpose |
-| --- | ---: | --- |
-| `RLVISER_PORT` | `45243` | RLViser listener port |
+| Constant         |    Port | Purpose                            |
+| ---------------- | ------: | ---------------------------------- |
+| `RLVISER_PORT`   | `45243` | RLViser listener port              |
 | `ROCKETSIM_PORT` | `34254` | Local RocketSim/client socket port |
 
-You can use the defaults with `Rlviser::new()` or provide custom ports with `Rlviser::with_ports(rocketsim_port, rlviser_port)`.
+You can use the defaults with `Rlviser::new()` or provide custom ports with `Rlviser::with_ports(rocketsim_port, rlviser_port)`. Through the arena helper, use `set_rlviser_enabled(true)` for the defaults or `set_rlviser_enabled_with_ports(true, rocketsim_port, rlviser_port)` for custom ports (pass `0` as the local port for an OS-assigned ephemeral port).
 
 ## Basic usage
 
@@ -46,54 +42,45 @@ fn main() -> std::io::Result<()> {
     arena.set_rlviser_enabled(true)?;
 
     loop {
-        arena.step_tick();
+        // Adopt pause/speed/state edits sent back by RLViser.
+        arena.handle_rlviser_messages()?;
+        if !arena.rlviser_paused() {
+            arena.step_tick();
+        }
     }
 }
 ```
 
 When attached, the visualizer sends a connection message immediately and streams `GameState` packets from RocketSim to RLViser on every arena visualization update. When dropped, it sends a quit message.
 
-## Running the examples
+## Running the example
 
-Start RLViser first, then run one of the examples.
-
-To watch an automated arena, optionally choosing the game mode:
-
-```bash
-cargo run --example watch -- [soccar|hoops|dropshot]
-```
-
-To drive a single blue Breakout with keyboard/mouse controls:
+Start RLViser first, then run the automated-arena example, optionally choosing
+the game mode with `-g`:
 
 ```bash
-cargo run --example drive
+cargo run --example watch -- [-g <soccar|hoops|dropshot|heatseeker|snowday|thevoid>]
 ```
 
-The `drive` example reads keyboard/mouse input for basic control:
+The example spawns six cars with simple throttle/steer controls, steps the
+arena at `TICK_RATE` (120 Hz), resets to kickoff after goals, and honors the
+pause/speed controls sent by RLViser.
 
-| Input | Action |
-| --- | --- |
-| `W` / `S` | Throttle forward/backward |
-| `A` / `D` | Steer / yaw |
-| `Q` / `E` | Roll |
-| `Left Shift` | Handbrake |
-| Mouse buttons | Jump / boost |
-| `Backspace` | Reset arena to kickoff |
-| `2` | Move ball above the car for dribbling |
-| `4` | Launch the ball upward |
+## Pause, speed, and state edits
 
-## Pause and speed messages
-
-RLViser can send control messages back to the simulation. `Rlviser` tracks these values internally:
+RLViser can send control messages back to the simulation. `Rlviser` tracks the
+latest values internally — read them directly or through the arena helper:
 
 ```rust
-let paused = rlviser.paused();
-let speed = rlviser.speed();
+let paused = arena.rlviser_paused();
+let speed = arena.rlviser_speed();
 ```
 
-The built-in `Vis` implementation skips sending game states while paused. The current speed value is stored but applying it to your simulation loop is up to your code.
-
-> Note: full editor-originated `GameState` updates from RLViser are decoded but not applied by the `Vis` implementation because RocketSim's `Vis` trait only receives immutable arena state.
+Neither pausing nor speed is applied for you: skip `step_tick()` while paused,
+and scale your own loop timing by `speed` (see `examples/watch.rs` for both).
+Ball, car, and boost-pad edits from RLViser are applied by
+`handle_rlviser_messages`. Dropshot tile edits are currently decoded but not
+applied.
 
 ## Protocol notes
 
@@ -101,7 +88,7 @@ Packets are encoded with Planus from the FlatBuffers schemas in `spec/`.
 
 Each UDP packet is structured as:
 
-1. An 8-byte big-endian unsigned payload length header.
+1. An 8-byte big-endian unsigned payload length header (`PACKET_SIZE_BYTES`).
 2. A Planus-encoded `Packet` payload.
 
 `PacketCodec` exposes helpers for encoding and decoding messages if you need to integrate with the protocol directly:
@@ -110,5 +97,5 @@ Each UDP packet is structured as:
 use rlviser_rocketsim::{PacketCodec, RlviserMessage};
 
 let mut codec = PacketCodec::new();
-let bytes = codec.encode(RlviserMessage::Connection);
+let bytes = codec.encode(RlviserMessage::Connection).to_vec();
 ```

@@ -2,6 +2,14 @@
 name = "rlviser-rocketsim"
 version = "0.1.0"
 edition = "2024"
+rust-version = "1.95"
+description = "Stream RocketSim arena state to RLViser over UDP"
+readme = "README.md"
+homepage = "https://github.com/VirxEC/rlviser-rocketsim"
+repository = "https://github.com/VirxEC/rlviser-rocketsim"
+license = "MIT"
+keywords = ["flatbuffers", "gamedev", "rocket-league", "simulation", "visualization"]
+categories = ["game-development", "simulation", "visualization"]
 
 [dependencies]
 planus = "1.3.0"
