@@ -1,6 +1,6 @@
 [package]
 name = "rlviser-rocketsim"
-version = "0.1.0"
+version = "0.1.1"
 edition = "2024"
 rust-version = "1.95"
 description = "Stream RocketSim arena state to RLViser over UDP"
@@ -13,7 +13,7 @@ categories = ["game-development", "simulation", "visualization"]
 
 [dependencies]
 planus = "1.3.0"
-rocketsim = "0.2.0"
+rocketsim = "0.2.10"
 serde = { version = "1.0.195", features = ["derive"] }
 
 [dev-dependencies]

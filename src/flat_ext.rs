@@ -152,6 +152,7 @@ impl FromFlat<&fb::CarState> for CarState {
             flip_time: state.flip_time,
             is_flipping: state.is_flipping,
             is_jumping: state.is_jumping,
+            jump_hold_broken: false,
             air_time: state.air_time,
             air_time_since_jump: state.air_time_since_jump,
             boost: state.boost,

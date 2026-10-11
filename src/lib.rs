@@ -456,7 +456,9 @@ pub trait ArenaRlviserExt {
     ///
     /// init_from_default(true).unwrap();
     /// let mut arena = Arena::new_with_config(ArenaConfig::new(GameMode::Soccar));
-    /// arena.set_rlviser_enabled_with_ports(true, 0, RLVISER_PORT).unwrap();
+    /// arena
+    ///     .set_rlviser_enabled_with_ports(true, 0, RLVISER_PORT)
+    ///     .unwrap();
     /// ```
     ///
     /// # Errors
