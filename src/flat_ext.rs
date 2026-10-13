@@ -166,6 +166,7 @@ impl FromFlat<&fb::CarState> for CarState {
             auto_flip_timer: state.auto_flip_timer,
             auto_flip_torque_scale: state.auto_flip_torque_scale,
             bump_cooldown_timer: state.car_contact.as_ref().map_or(0.0, |c| c.cooldown_timer),
+            bump_cooldown_victim: None,
             last_extra_hit_tick: None,
             world_contact_normal: state.world_contact_normal.map(Vec3A::from_flat),
             is_demoed: state.is_demoed,
